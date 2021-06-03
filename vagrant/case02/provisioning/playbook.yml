@@ -1,0 +1,276 @@
+---
+- name: Install all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add hosts in /etc/hosts
+      blockinfile:
+        path: /etc/hosts
+        block: "{{etc_hosts}}"
+        state: present
+
+    - name: Install packages
+      apt:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      with_items:
+        - unzip
+        - openjdk-11-jdk
+        - qemu-system
+
+    - name: Download Consul binary
+      unarchive:
+        src: "{{consul_url}}/{{consul_version}}/consul_{{consul_version}}_linux_amd64.zip"
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Setup bash autocompletion
+      lineinfile: 
+        path: /home/vagrant/.bashrc
+        line: complete -C /usr/local/bin/consul consul
+        state: present
+
+    - name: Add Consul system user
+      user:
+        name: consul
+        system: yes
+        home: /etc/consul.d
+        create_home: no
+        shell: /bin/false
+        state: present
+
+    - name: Create Consul data directory
+      file:
+        path: /opt/consul
+        owner: consul
+        group: consul
+        recurse: yes
+        state: directory
+    
+    - name: Create Consul configuration directory
+      file:
+        path: /etc/consul.d
+        state: directory
+        owner: consul
+        group: consul
+
+    - name: Create Consul configuration file
+      template:
+        src: consul.hcl.j2
+        dest: /etc/consul.d/consul.hcl
+        mode: 0640
+        owner: consul
+        group: consul
+
+    - name: Create CNI directory
+      file:
+        path: /opt/cni/bin
+        state: directory
+
+    - name: Download CNI plugins
+      unarchive:
+        src: "https://github.com/containernetworking/plugins/releases/download/v{{cni_plugins_version}}/cni-plugins-linux-amd64-v{{cni_plugins_version}}.tgz"
+        dest: /opt/cni/bin
+        remote_src: yes
+
+    - name: Config linux bridge
+      blockinfile:
+        path: /etc/sysctl.d/10-bridge.conf
+        state: present
+        create: yes
+        block: |
+          net.bridge.bridge-nf-call-arptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+
+    - name: Get Docker installer script
+      get_url:
+        url: https://get.docker.com
+        dest: ./get-docker.sh
+        mode: u+x
+
+    - name: Install Docker
+      shell: 
+        cmd: ./get-docker.sh
+        executable: /bin/sh
+        creates: /usr/bin/docker
+
+    - name: Add Vagrant user to docker group
+      user:
+        name: vagrant
+        append: yes
+        groups: docker
+
+    - name: Download Nomad binary
+      unarchive:
+        src: "{{nomad_url}}/{{nomad_version}}/nomad_{{nomad_version}}_linux_amd64.zip"
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Setup bash autocompletion
+      lineinfile: 
+        path: /home/vagrant/.bashrc
+        line: complete -C /usr/local/bin/nomad nomad
+        state: present
+
+    - name: Create Nomad data directory
+      file:
+        path: /opt/nomad
+        state: directory
+    
+    - name: Create Nomad configuration directory
+      file:
+        path: /etc/nomad.d
+        state: directory
+
+    - name: Create Nomad configuration file
+      template:
+        src: nomad.hcl.j2
+        dest: /etc/nomad.d/nomad.hcl
+        mode: 0640
+
+    - name: Add Nomad address env variable
+      lineinfile:
+        path: /home/vagrant/.bashrc
+        line: "export NOMAD_ADDR='http://{{ansible_facts.eth1.ipv4.address}}:4646'"
+        state: present
+
+    - name: Create Consul service
+      copy:
+        src: consul.service
+        dest: /etc/systemd/system/consul.service
+
+    - name: Enable and start Consul service
+      service:
+        name: consul
+        state: restarted
+        enabled: yes
+
+    - name: Create Nomad service
+      copy:
+        src: nomad.service
+        dest: /etc/systemd/system/nomad.service
+
+    - name: Enable and start Nomad service
+      service:
+        name: nomad
+        state: restarted
+        enabled: yes
+
+- name: Setup server
+  hosts: server
+  become: yes
+  tasks:
+    - name: Create Consul server configuration file
+      template:
+        src: consul_server.hcl.j2
+        dest: /etc/consul.d/server.hcl
+        mode: 0640
+        owner: consul
+        group: consul
+
+    - name: Create Nomad server configuration file
+      template:
+        src: nomad_server.hcl.j2
+        dest: /etc/nomad.d/server.hcl
+        mode: 0640
+
+    - name: Download Vault binary
+      unarchive:
+        src: "{{vault_url}}/{{vault_version}}/vault_{{vault_version}}_linux_amd64.zip"
+        dest: /usr/local/bin
+        remote_src: yes
+    
+    - name: Setup bash autocompletion
+      lineinfile: 
+        path: /home/vagrant/.bashrc
+        line: complete -C /usr/local/bin/vault vault
+        state: present
+
+    - name: Give Vault the ability to use the mlock syscall without running the process as root
+      shell: setcap cap_ipc_lock=+ep /usr/local/bin/vault
+
+    - name: Add Vault system user
+      user:
+        name: vault
+        system: yes
+        home: /etc/vault.d
+        create_home: no
+        shell: /bin/false
+        state: present
+    
+    - name: Create Vault configuration directory
+      file:
+        path: /etc/vault.d
+        state: directory
+        owner: vault
+        group: vault
+
+    - name: Create Vault configuration file
+      template:
+        src: vault.hcl.j2
+        dest: /etc/vault.d/vault.hcl
+        mode: 0640
+        owner: vault
+        group: vault
+
+    - name: Create Vault service
+      copy:
+        src: vault.service
+        dest: /etc/systemd/system/vault.service
+
+    - name: Create Vault storage directory
+      file:
+        path: /opt/raft
+        state: directory
+        owner: vault
+        group: vault
+
+    - name: Enable and start Vault service
+      service:
+        name: vault
+        state: restarted
+        enabled: yes
+
+    - name: Add Vault address env variable
+      lineinfile:
+        path: /home/vagrant/.bashrc
+        line: "export VAULT_ADDR='http://{{ansible_facts.eth1.ipv4.address}}:8200'"
+        state: present
+
+    - name: Download Waypoint binary
+      unarchive:
+        src: "{{waypoint_url}}/{{waypoint_version}}/waypoint_{{waypoint_version}}_linux_amd64.zip"
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Setup bash autocompletion
+      lineinfile: 
+        path: /home/vagrant/.bashrc
+        line: complete -C /usr/local/bin/waypoint waypoint
+        state: present
+
+    - name: Download Boundary binary
+      unarchive:
+        src: "{{boundary_url}}/{{boundary_version}}/boundary_{{boundary_version}}_linux_amd64.zip"
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Setup bash autocompletion
+      lineinfile: 
+        path: /home/vagrant/.bashrc
+        line: complete -C /usr/local/bin/boundary boundary
+        state: present
+
+    - name: Download Terraform binary
+      unarchive:
+        src: "{{terraform_url}}/{{terraform_version}}/terraform_{{terraform_version}}_linux_amd64.zip"
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Setup bash autocompletion
+      lineinfile: 
+        path: /home/vagrant/.bashrc
+        line: complete -C /usr/local/bin/terraform terraform
+        state: present
