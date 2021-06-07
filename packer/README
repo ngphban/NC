@@ -1,0 +1,13 @@
+Run below steps on WINDOWS:
+
+- Install virtualbox latest: https://download.virtualbox.org/virtualbox/6.1.22/VirtualBox-6.1.22-144080-Win.exe
+- Install vagrant 2.2.15: https://releases.hashicorp.com/vagrant/2.2.15/vagrant_2.2.15_x86_64.msi
+- Install packer: https://releases.hashicorp.com/packer/1.7.2/packer_1.7.2_windows_amd64.zip
+- Install Git client: https://github.com/git-for-windows/git/releases/download/v2.31.1.windows.1/Git-2.31.1-64-bit.exe
+
+Now:
+- Checkout the source repo: https://github.com/ngphban/NC
+- cd NC/packer
+- packer build .\ubuntu1804.json
+- vagrant up
+
