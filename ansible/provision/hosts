@@ -1,0 +1,6 @@
+[webservers]
+webserver01  ansible_ssh_host=10.0.26.101
+webserver02  ansible_ssh_host=10.0.26.102
+
+[loadbalancers]
+loadbalancer  ansible_ssh_host=10.0.26.100

@@ -1,0 +1,16 @@
+---
+- name: Install common packages
+  yum: 
+    name:
+      - epel-release
+      - zip
+      - unzip
+      - bzip2
+      - wget
+      - libselinux-python
+      - policycoreutils-python
+      - git
+      - curl
+      - net-tools
+    state: latest
+    update_cache: true
