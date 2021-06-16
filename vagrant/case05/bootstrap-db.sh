@@ -155,7 +155,6 @@ sudo chmod a+wrx $CONSUL_EXTRA_CONFIGS/*.*
 echo -e "==> 9. Start Consul agent"
 sudo service consul restart
 
-
 # Install MySQL
 if [ ! -f /var/log/10_install_mysql_packages ]
 then
@@ -173,7 +172,6 @@ fi
 mysql_ready() {
     sudo mysqladmin ping --host=localhost --user=$DBUSER --password=$DBPASSWD > /dev/null 2>&1
 }
-
 
 # setup MySQL
 if [ ! -f /var/log/11_setup_mysql ]
@@ -197,6 +195,7 @@ then
 
 	# Notify AppArmor with new DB data path
 	echo "alias /var/lib/mysql/ -> $DBDIRPATH," | sudo tee -a /etc/apparmor.d/tunables/alias
+
 	# Reload apparmor
 	sudo /etc/init.d/apparmor reload
 

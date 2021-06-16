@@ -98,7 +98,7 @@ cluster = {
     "db1.local" => {
         :type           => "db",
         :ip             => "192.168.100.41",
-        :cpus           => 1, :mem => 256,
+        :cpus           => 1, :mem => 512,
         :shellpath      => "bootstrap-db.sh",
         :consulconfig   => "/vagrant/config/consul-db1.json",
         :consulextra    => "/vagrant/config/db",
@@ -128,8 +128,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     cluster.each_with_index do |(hostname, info), index|
         config.vm.define hostname do |cfg|
             cfg.vm.provider :virtualbox do |vb, override|
-                override.vm.box = "ubuntu/precise64"
-
+                override.vm.box = "annpb/myOwnImage"
+                override.vm.box_version = "1.0"
+                override.ssh.username = "vagrant"
+                override.ssh.password = "vagrant"
                 # Mount synced folders
                 info[:syncedfolders].each do |folder|
                     override.vm.synced_folder folder[:guest], folder[:host], id: folder[:id], owner: folder[:owner], group: folder[:group], mount_options: [folder[:mountoptions]]

@@ -1,0 +1,22 @@
+---
+# playbook.yml file.
+- hosts: all
+  user: root
+  become: true
+  become_user: root
+  roles:
+    - common
+
+- hosts: webservers
+  user: root
+  become: true
+  become_user: root
+  roles:
+    - nginx
+
+- hosts: loadbalancers
+  user: root
+  become: true
+  become_user: root
+  roles:
+    - haproxy

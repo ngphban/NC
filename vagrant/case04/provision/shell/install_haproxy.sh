@@ -54,7 +54,7 @@ fi
 
 # Print usage
 usage() {
-cat 1>&2 <<'EOF'
+cat 1>&2 <<'EOF' 
 Usage:
 
 ./install_haproxy.sh [OPTIONS]
@@ -81,7 +81,7 @@ do
 		if [[ -z $YOUR_BINDING_PORT ]]; then
 			exiterr "Options -httpport requires a value"
 		fi
-		if [[ $YOUR_BINDING_PORT =~ ^[0-9]+$ ]]; then
+		if [[ $YOUR_BINDING_PORT =~ ^[0-9]+$ ]]; then  
 			if [[ $YOUR_BINDING_PORT -lt 80 || $YOUR_BINDING_PORT -gt 9999 ]]; then
 				exiterr "Binding port must be between 80 and 9999!"
 			fi	

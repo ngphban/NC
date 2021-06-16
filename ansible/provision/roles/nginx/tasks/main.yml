@@ -1,0 +1,66 @@
+---
+#Installing nginx web server server from YUM
+- name: Install EPEL repository
+  yum: name=epel-release state=present
+
+- name: Installing nginx web server
+  yum: name=nginx state=present update_cache=true   
+  notify: start nginx
+
+- name: Install remi repo
+  yum_repository:
+    name: remi-php70
+    description: Remi's PHP 7.0 RPM repository for CentOS
+    state: present
+    mirrorlist: http://rpms.remirepo.net/enterprise/7/php70/mirror
+    enabled: yes
+    gpgcheck: 1
+    gpgkey: http://rpms.remirepo.net/RPM-GPG-KEY-remi
+
+# - name: Install remi repo.
+#   yum:
+#     name: http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+#     state: present
+
+# - name: Import remi GPG key.
+#   rpm_key:
+#     key: http://rpms.remirepo.net/RPM-GPG-KEY-remi
+#     state: present
+
+- name: Install PHP 7.0
+  yum: 
+    enablerepo: "remi-php70"
+    name:
+      - php
+      - php-devel
+      - php-common
+      - php-xml
+      - php-mysqlnd
+      - php-pecl-igbinary
+      - php-soap
+      - php-pecl-memcache
+      - php-mbstring
+      - php-mcrypt
+      - php-fpm
+    state: present
+    update_cache: true
+
+- name: Copying php-fpm config
+  copy: src=www.conf dest=/etc/php-fpm.d/www.conf
+  notify: restart php-fpm
+
+- name: Copying nginx config
+  template: src=nginx.conf.j2 dest=/etc/nginx/nginx.conf
+  notify: restart nginx
+
+- name: Copying info page
+  copy: src=info.php dest=/usr/share/nginx/html/info.php
+
+- name: Adding permissive access
+  command: semanage permissive -a httpd_t  
+
+- name: Enable nginx to be started at boot
+  service: name=nginx enabled=yes state=started
+
+- name: Enable php-fpm to be started at boot
+  service: name=php-fpm enabled=yes state=started

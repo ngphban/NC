@@ -1,0 +1,13 @@
+---
+
+- name: start nginx
+  service: name=nginx state=started
+
+- name: restart nginx
+  service: name=nginx state=restarted
+
+- name: start php-fpm
+  service: name=php-pfm state=started
+
+- name: restart php-fpm
+  service: name=php-fpm state=restarted
