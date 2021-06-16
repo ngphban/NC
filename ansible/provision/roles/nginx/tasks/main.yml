@@ -4,7 +4,7 @@
   yum: name=epel-release state=present
 
 - name: Installing nginx web server
-  yum: name=nginx state=present update_cache=true
+  yum: name=nginx state=present update_cache=true   
   notify: start nginx
 
 - name: Install remi repo
@@ -57,7 +57,7 @@
   copy: src=info.php dest=/usr/share/nginx/html/info.php
 
 - name: Adding permissive access
-  command: semanage permissive -a httpd_t
+  command: semanage permissive -a httpd_t  
 
 - name: Enable nginx to be started at boot
   service: name=nginx enabled=yes state=started

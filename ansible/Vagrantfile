@@ -51,6 +51,9 @@ end
       mgmt.vm.provision "shell", inline: "service sshd restart"
       mgmt.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
       mgmt.vm.provision "file", source: "provision", destination: "/home/vagrant/"
+      mgmt.vm.provision "shell", inline: "yum -y install dos2unix"
+      mgmt.vm.provision "shell", inline: "find /home/vagrant/ -type f -print0 | xargs -0 dos2unix"
+      mgmt.vm.provision "shell", inline: "chmod +x /home/vagrant/provision/aws/inventory/ec2*.*"
       mgmt.vm.provision "shell", path: "shell/ansible-setup.sh"
   end
 end
