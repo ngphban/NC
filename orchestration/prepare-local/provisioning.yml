@@ -1,0 +1,147 @@
+---
+- hosts: nodes
+  become: true
+  vars_files:
+    - vagrant.yml
+
+  tasks:
+
+    - name: Clean up the home folder
+      file:
+        path: /home/vagrant/{{ item }}
+        state: absent
+      with_items:
+        - base.sh
+        - chef.sh
+        - cleanup.sh
+        - cleanup-virtualbox.sh
+        - puppetlabs-release-wheezy.deb
+        - puppet.sh
+        - ruby.sh
+        - vagrant.sh
+        - virtualbox.sh
+        - zerodisk.sh
+
+    - name: Ensure old versions of Docker are not installed.
+      package:
+        name:
+          - docker
+          - docker-engine
+        state: absent
+
+    - name: Ensure dependencies are installed.
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Add Docker apt key.
+      apt_key:
+        url: "{{ docker_apt_gpg_key }}"
+        id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+        state: present
+      register: add_repository_key
+      ignore_errors: "{{ docker_apt_ignore_key_error }}"
+
+    - name: Ensure curl is present (on older systems without SNI).
+      package: name=curl state=present
+      when: add_repository_key is failed
+
+    - name: Add Docker apt key (alternative for older systems without SNI).
+      shell: >
+        curl -sSL {{ docker_apt_gpg_key }} | sudo apt-key add -
+      args:
+        warn: false
+      when: add_repository_key is failed
+
+    - name: Add Docker repository.
+      apt_repository:
+        repo: "{{ docker_apt_repository }}"
+        state: present
+        update_cache: true      
+
+    - name: Install Docker.
+      package:
+        name: "{{ docker_package }}"
+        state: "{{ docker_package_state }}"
+      notify: restart docker
+      ignore_errors: "{{ ansible_check_mode }}"
+
+    - name: Adding user vagrant to group docker
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+
+    - name: Performing pip autoupgrade
+      pip:
+        name: pip
+        state: latest
+
+    - name: Installing virtualenv
+      pip:
+        name: virtualenv
+        state: latest
+
+    - name: Install Docker Compose via PIP
+      pip: name=docker-compose
+
+    - name:
+      file:
+        path="/usr/local/bin/docker-compose"
+        state=file
+        mode=0755
+        owner=vagrant
+        group=docker
+
+    - name: Building the /etc/hosts file with all nodes
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ item.private_ip }} {{ item.hostname }}"
+        regexp: "^{{ item.private_ip }} {{ item.hostname }}$"
+        state: present
+      with_items: "{{ instances }}"
+
+    - name: Copying the ssh key to the nodes
+      copy:
+        src: private-key
+        dest: /home/vagrant/private-key
+        mode: 0600
+        group: root
+        owner: vagrant
+
+    - name: Copying ssh configuration
+      copy:
+        src: ssh-config
+        dest: /home/vagrant/.ssh/config
+        mode: 0600
+        group: root
+        owner: vagrant
+
+    - name: Fixing the hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Adjusting the /etc/hosts to the new hostname
+      lineinfile:
+        dest: /etc/hosts
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - regexp: '^127\.0\.0\.1'
+          line: "127.0.0.1 localhost {{ inventory_hostname }}"
+        - regexp: '^127\.0\.1\.1'
+          line: "127.0.1.1 {{ inventory_hostname }}"
+
+  handlers:
+
+    - name: restart docker
+      service: "name=docker state={{ docker_restart_handler_state }}"
+      ignore_errors: "{{ ansible_check_mode }}"

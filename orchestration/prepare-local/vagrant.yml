@@ -1,0 +1,55 @@
+---
+vagrant:
+  default_box: ubuntu/bionic64
+  default_box_check_update: true
+  ssh_insert_key: false
+  min_memory: 256
+  min_cores: 1
+
+instances:
+
+  - hostname: node1
+    private_ip: 10.10.10.10
+    memory: 4096
+    cores: 1
+    mounts:
+      - host_path: ../
+        guest_path: /home/vagrant/orchestration-workshop
+        owner: vagrant
+        group: vagrant
+
+  - hostname: node2
+    private_ip: 10.10.10.20
+    memory: 2048
+    cores: 1
+
+  - hostname: node3
+    private_ip: 10.10.10.30
+    memory: 2048
+    cores: 1
+
+  - hostname: node4
+    private_ip: 10.10.10.40
+    memory: 2048
+    cores: 1
+
+  - hostname: node5
+    private_ip: 10.10.10.50
+    memory: 2048
+    cores: 1
+
+docker_edition: 'ce'
+docker_package: "docker-{{ docker_edition }}"
+docker_package_state: present
+
+docker_service_state: started
+docker_service_enabled: true
+docker_restart_handler_state: restarted
+docker_repo_url: https://download.docker.com/linux
+docker_apt_release_channel: stable
+docker_apt_arch: amd64
+docker_apt_repository: "deb [arch={{ docker_apt_arch }}] {{ docker_repo_url }}/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} {{ docker_apt_release_channel }}"
+docker_apt_ignore_key_error: true
+docker_apt_gpg_key: "{{ docker_repo_url }}/{{ ansible_distribution | lower }}/gpg"
+
+
