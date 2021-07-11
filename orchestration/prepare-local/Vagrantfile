@@ -67,7 +67,7 @@ Vagrant.configure('2') do |config|
 
       if instance.has_key? 'mounts'
         instance['mounts'].each do |mount|
-          guest.vm.synced_folder mount['host_path'], mount['guest_path'], owner: mount['owner'], group: mount['group']
+          guest.vm.synced_folder mount['host_path'], mount['guest_path'], owner: mount['owner'], group: mount['group'], mount_options: ["dmode=775,fmode=600"]
         end
       end
 

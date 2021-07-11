@@ -29,47 +29,10 @@
           - docker-engine
         state: absent
 
-    - name: Ensure dependencies are installed.
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - gnupg
-          - python3-pip
-        state: present
-        update_cache: yes
-
-    - name: Add Docker apt key.
-      apt_key:
-        url: "{{ docker_apt_gpg_key }}"
-        id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
-        state: present
-      register: add_repository_key
-      ignore_errors: "{{ docker_apt_ignore_key_error }}"
-
-    - name: Ensure curl is present (on older systems without SNI).
-      package: name=curl state=present
-      when: add_repository_key is failed
-
-    - name: Add Docker apt key (alternative for older systems without SNI).
-      shell: >
-        curl -sSL {{ docker_apt_gpg_key }} | sudo apt-key add -
-      args:
-        warn: false
-      when: add_repository_key is failed
-
-    - name: Add Docker repository.
-      apt_repository:
-        repo: "{{ docker_apt_repository }}"
-        state: present
-        update_cache: true      
-
-    - name: Install Docker.
-      package:
-        name: "{{ docker_package }}"
-        state: "{{ docker_package_state }}"
-      notify: restart docker
-      ignore_errors: "{{ ansible_check_mode }}"
+    - name: Install docker
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh ./get-docker.sh
 
     - name: Adding user vagrant to group docker
       user:
@@ -77,20 +40,12 @@
         groups: docker
         append: yes
 
-    - name: Performing pip autoupgrade
-      pip:
-        name: pip
-        state: latest
+    - name: Install docker-compose
+      shell: >
+        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" 
+        -o /usr/local/bin/docker-compose
 
-    - name: Installing virtualenv
-      pip:
-        name: virtualenv
-        state: latest
-
-    - name: Install Docker Compose via PIP
-      pip: name=docker-compose
-
-    - name:
+    - name: Apply execution permissions to the binaries
       file:
         path="/usr/local/bin/docker-compose"
         state=file
@@ -139,9 +94,3 @@
           line: "127.0.0.1 localhost {{ inventory_hostname }}"
         - regexp: '^127\.0\.1\.1'
           line: "127.0.1.1 {{ inventory_hostname }}"
-
-  handlers:
-
-    - name: restart docker
-      service: "name=docker state={{ docker_restart_handler_state }}"
-      ignore_errors: "{{ ansible_check_mode }}"
