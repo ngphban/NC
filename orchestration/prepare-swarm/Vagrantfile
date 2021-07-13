@@ -70,7 +70,9 @@ Vagrant.configure('2') do |config|
           guest.vm.synced_folder mount['host_path'], mount['guest_path'], owner: mount['owner'], group: mount['group'], mount_options: ["dmode=775,fmode=600"]
         end
       end
-
+      guest.vm.provision "ansible_local" do |ansible|
+        ansible.playbook = "provisioning.yml"  
+      end
     end
 
   end

@@ -1,5 +1,5 @@
 ---
-- hosts: nodes
+- hosts: node*
   become: true
   vars_files:
     - vagrant.yml
