@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      #schedulerName: stork
+      initContainers:
+      - name: rmdir
+        image: alpine
+        volumeMounts:
+        - mountPath: /vol
+          name: postgres
+        command: ["sh", "-c", "if [ -d /vol/lost+found ]; then rmdir /vol/lost+found; fi"]
+      containers:
+      - name: postgres
+        image: postgres:12
+        env:
+        - name: POSTGRES_HOST_AUTH_METHOD
+          value: trust
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+

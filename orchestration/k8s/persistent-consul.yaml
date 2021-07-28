@@ -1,0 +1,98 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: persistentconsul
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: persistentconsul
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: persistentconsul
+subjects:
+  - kind: ServiceAccount
+    name: persistentconsul
+    namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: persistentconsul
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: persistentconsul
+spec:
+  ports:
+  - port: 8500
+    name: http
+  selector:
+    app: persistentconsul
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: persistentconsul
+spec:
+  serviceName: persistentconsul
+  replicas: 3
+  selector:
+    matchLabels:
+      app: persistentconsul
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  template:
+    metadata:
+      labels:
+        app: persistentconsul
+    spec:
+      serviceAccountName: persistentconsul
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - persistentconsul
+              topologyKey: kubernetes.io/hostname
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: consul
+          image: "consul:1.6"
+          volumeMounts:
+            - name: data
+              mountPath: /consul/data
+          args:
+            - "agent"
+            - "-bootstrap-expect=3"
+            - "-retry-join=provider=k8s label_selector=\"app=persistentconsul\""
+            - "-client=0.0.0.0"
+            - "-data-dir=/consul/data"
+            - "-server"
+            - "-ui"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - consul leave

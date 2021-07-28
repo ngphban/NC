@@ -1,0 +1,13 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: stilton
+spec:
+  rules:
+  - host: stilton.192.168.50.11.nip.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: stilton
+          servicePort: 80

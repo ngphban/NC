@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: cheeseplate
+  annotations:
+    traefik.ingress.kubernetes.io/service-weights: |
+      cheddar: 10%
+      wensleydale: 80%
+      stilton: 10%
+spec:
+  tls:
+  - secretName: cheeseplate.192.168.50.11.nip.io
+    hosts:
+    - cheeseplate.192.168.50.11.nip.io 
+spec:
+  rules:
+  - host: cheeseplate.192.168.50.11.nip.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: cheddar
+          servicePort: 80
+      - path: /
+        backend:
+          serviceName: wensleydale
+          servicePort: 80
+      - path: /
+        backend:
+          serviceName: stilton
+          servicePort: 80
