@@ -19,6 +19,20 @@
         name: docker 
         state: started
 
+- name: Make sure Docker config folder exists
+  file:
+    src: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Change cgroup management to systemd
+  copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+  notify: restart docker
+  
 - name: Configure node-ip {{ k8s_node_public_ip }} at kubelet
   lineinfile:
     path: '/etc/systemd/system/kubelet.service.d/10-kubeadm.conf'
