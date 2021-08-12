@@ -21,7 +21,7 @@
 
 - name: Make sure Docker config folder exists
   file:
-    src: /etc/docker
+    path: /etc/docker
     state: directory
     owner: root
     group: root
