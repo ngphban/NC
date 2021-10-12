@@ -1,0 +1,39 @@
+# This uses a Node v12 Image to build the project.
+image: node:14
+
+definitions:
+  steps:
+    - step: &deploy-cdk
+        name: Deploy cdk
+        caches:
+          - node
+        script:
+          # credentials we'll use for deploying CDK artifacts
+          - export AWS_DEFAULT_REGION=ap-southeast-2
+          - export DEPLOY_ENVIRONMENT=$ENV
+
+          # install dependencies for CDK
+          - npm install -g aws-cdk
+          - npm i @aws-cdk/aws-cloudfront @aws-cdk/aws-route53 @aws-cdk/aws-s3 @aws-cdk/aws-s3-deployment @aws-cdk/aws-certificatemanager @aws-cdk/core @aws-cdk/aws-route53-targets
+          - npm install --save-dev typescript @types/node
+
+          # Current directory
+          - pwd
+          - ls -alh
+
+          # Replace fake credential
+          - sed -i "s/AUTHUSER/$USERNAME/" stacks/static-site/functions/view-request/index.js
+          - sed -i "s/AUTHPASSWORD/$PASSWORD/" stacks/static-site/functions/view-request/index.js
+          
+          # Now deploy!
+          - npm run build
+          - npm run synth
+          - npm run deploy
+
+pipelines:
+  branches:
+    master:
+      - step:
+          <<: *deploy-cdk
+          deployment: Production
+          trigger: automatic

@@ -1,0 +1,8 @@
+{
+  "account": "335003975422",
+  "region": "ap-southeast-2",
+  "hosted-zone:account=335003975422:domainName=cdk-demo.cf:region=ap-southeast-2": {
+    "Id": "/hostedzone/Z0875019YPP7MF6L3I7F",
+    "Name": "cdk-demo.cf."
+  }
+}

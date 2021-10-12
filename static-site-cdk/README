@@ -1,0 +1,17 @@
+# Pre-requisites
+## Install AWS CLI
+## Add AWS credential
+## Install npm
+## Install AWS CDK
+
+# Deploy
+## Install required libraries
+npm init -y 
+npm i @aws-cdk/aws-cloudfront @aws-cdk/aws-route53 @aws-cdk/aws-s3 @aws-cdk/aws-s3-deployment @aws-cdk/aws-certificatemanager @aws-cdk/core @aws-cdk/aws-route53-targets 
+npm i --save-dev typescript @types/node 
+
+## Deploy the stack
+npm run build 
+npm run synth 
+npm run deploy 
+
